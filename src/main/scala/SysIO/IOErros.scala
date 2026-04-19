@@ -4,10 +4,13 @@ trait IOError:
   val msg: String
 
 case class WriteError(e: Throwable) extends IOError:
-  val msg = s"Не удалось записать файл ${e.getMessage}"
+  val msg = s"Failed to write file: ${e.getMessage}"
 
 case class ConvertSvgToPngError(e: Throwable) extends IOError:
-  val msg = s"Ошибка конвертации SVG -> PNG. Убедись, что rsvg-convert установлена."
+  val msg = "Error converting SVG to PNG. Please ensure rsvg-convert is installed."
 
-case class SetMacWallpaperError(e: Throwable) extends IOError:
-  val msg = s"Не удалось поменять обои на Mac: ${e.getMessage}"
+case class SetWallpaperError(e: Throwable) extends IOError:
+  val msg = s"Failed to set desktop wallpaper: ${e.getMessage}"
+
+case class InvalidHexFormatError(hex: String) extends IOError:
+  val msg = s"Invalid color format: '$hex'. The HEX code must be exactly 6 characters (e.g., #FF0000)."

@@ -1,69 +1,50 @@
 import engine.PaletteGenerator
 import engine.PaletteStyle
 import engine.SvgGenerator.generateSvgContent
+import zio.Console.*
 import zio.ZIO
 import zio.cli.*
 import zio.cli.HelpDoc.Span.text
 import SysIO.*
-
-/*@main def hello(): Unit =
-  val inputHex = "#9B5DE5"
-  val result = PaletteGenerator.generate(inputHex, 8, PaletteStyle.Analogous, isDarkTheme = true)
-  val svgString = generateSvgContent(
-    colors = result.colors.map(_.value),
-    bgHex = result.background.value
-  )
-  println(svgString)*/
+import cli.BuildInfo
+import cli.Cli
+import cli.GenerationConfig
+import cli.Messages.CLI
 
 object Gradis extends ZIOCliDefault:
-  val colorArg: Args[String] = Args.text("hex-color")
-  val stepsOpt: Options[BigInt] = Options.integer("steps").alias("s").withDefault(BigInt(7))
-  val darkThemeOpt: Options[Boolean] = Options.boolean("dark").alias("d")
-  val cliOptions = stepsOpt ++ darkThemeOpt
+  val colorArg: Args[String] = Args.text("hex-color") ?? CLI.colorArgHelp
+  val stepsOpt: Options[BigInt] = Options.integer("steps").alias("s").withDefault(BigInt(7)) ?? CLI.stepsOptHelp
+  val darkThemeOpt: Options[Boolean] = Options.boolean("dark").alias("d") ?? CLI.darkOptHelp
+  val skipBgOpt = Options.boolean("skip-bg") ?? CLI.skipBgOptHelp
+  val skipCleanUpOpt = Options.boolean("skip-cl") ?? CLI.skipCleanUpOptHelp
+  val outOpt: Options[Option[String]] = Options.text("out").alias("o").optional ?? CLI.outOptHelp
+
+  val styleOpt = Options.enumeration("style")(
+    "analogous" -> PaletteStyle.Analogous,
+    "mono" -> PaletteStyle.Monochromatic,
+    "comp" -> PaletteStyle.Complementary
+  ).withDefault(PaletteStyle.Analogous) ?? CLI.styleOptHelp
+
+  val cliOptions = stepsOpt ++ darkThemeOpt ++ skipBgOpt ++ outOpt ++ styleOpt ++ skipCleanUpOpt
   val generateCmd = Command("generate", cliOptions, colorArg)
 
   val rootCmd = Command("gradis").subcommands(generateCmd)
 
   val cliApp = CliApp.make(
-    name = "Mac Wallpaper Generator",
-    version = "1.0.0",
-    summary = text("Генерирует 10K обои на основе OKLCH палитры и ставит их на рабочий стол"),
+    name = BuildInfo.name,
+    version = BuildInfo.version,
+    summary = text(CLI.summary),
     command = rootCmd
-  ) { case ((stepsBigInt, isDark), rawHex) =>
-    val steps = stepsBigInt.toInt
-    val svgPath = "temp_palette.svg"
-    val pngPath = "wallpaper_10k.png"
-
-    val baseHex = rawHex.replaceAll("['\"\\s]", "")
-
-    val generationEffect = for {
-      _ <- ZIO.logInfo(s"Начинаем генерацию. Базовый цвет: $baseHex, Шагов: $steps, Темная тема: $isDark")
-
-      palette = PaletteGenerator.generate(baseHex, steps, PaletteStyle.Analogous, isDark)
-      _ <- ZIO.logInfo(s"Вычислен фон: ${palette.background.value}")
-
-      svgContent = generateSvgContent(palette.colors.map(_.value), palette.background.value)
-
-      _ <- ZIO.logInfo("Записываем SVG...")
-      _ <- SysIO.writeString(svgContent, svgPath)
-
-      _ <- ZIO.logInfo("Рендерим 10K PNG (это может занять секунду)...")
-      _ <- SysIO.convertSvgToPng(svgPath, pngPath)
-
-      _ <- ZIO.logInfo("Устанавливаем на рабочий стол...")
-      _ <- SysIO.setMacWallpaper(pngPath)
-
-      _ <- ZIO.logInfo("Убираем за собой...")
-      _ <- SysIO.deleteFile(svgPath)
-
-      _ <- ZIO.logInfo("Готово! Посмотри на свой рабочий стол.")
-    } yield ()
-
-    val withCleanup = generationEffect.ensuring(
-      ZIO.logInfo("Убираем за собой...") *> SysIO.deleteFile(svgPath)
+  ) { case ((stepsBigInt, isDark, skipBg, userOutPath, style, clean), rawHex) =>
+    val config = GenerationConfig(
+      rawHex = rawHex,
+      steps = stepsBigInt.toInt,
+      isDarkTheme = isDark,
+      setAsWallpaper = !skipBg,
+      skipCleanUp = !clean,
+      style = style,
+      customOutPath = userOutPath
     )
 
-    withCleanup.catchAll { (domainError: IOError) =>
-      ZIO.logError(s"Ошибка: ${domainError.msg}")
-    }
+    Cli.generate(config).catchAll(err => zio.Console.printLineError(err.msg).orDie)
   }

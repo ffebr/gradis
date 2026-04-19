@@ -1,0 +1,54 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Tag
+        id: tag_action
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+
+      - name: Setup GraalVM (Java 17)
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "17"
+          distribution: "graalvm"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: brew install rsvg-convert
+
+      - name: Build Native Image
+        run: sbt nativeImage
+
+      - name: Prepare Binary
+        run: |
+          mv target/native-image/gradis target/native-image/gradis-macos-arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag_action.outputs.new_tag }}
+          name: Release ${{ steps.tag_action.outputs.new_tag }}
+          body: |
+            ## Что нового
+            ${{ steps.tag_action.outputs.changelog }}
+          files: target/native-image/gradis-macos-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

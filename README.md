@@ -1,11 +1,37 @@
-## sbt project compiled with Scala 3
+# Gradis
 
-### Usage
+![Scala](https://img.shields.io/badge/Scala-3.3+-red.svg) ![ZIO](https://img.shields.io/badge/ZIO-2.0+-blue.svg) ![GraalVM](https://img.shields.io/badge/GraalVM-Native_Image-orange.svg) ![Platform](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+<p align="center">
+  <img src="assets/preview.svg" width="800" alt="Пример сгенерированных обоев">
+</p>
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+CLI-утилита для генерации обоев в разрешении 10K на основе цветового пространства OKLCH. Поддерживает автоматическую установку изображений на рабочий стол macOS и Windows.
 
+## Системные требования
 
-sbt "run generate --steps 9 '#50C878'"
+**Важно:** Для работы программы в системе обязательно должна быть установлена утилита `rsvg-convert`. Она отвечает за финальный рендеринг SVG в PNG. Без неё генерация файла завершится ошибкой.
+
+* **macOS:** `brew install rsvg-convert`
+
+## Использование
+
+```bash
+gradis generate <hex-color> [options]
+```
+
+### Доступные опции:
+* `--steps`, `-s` — Количество цветов в градиенте (по умолчанию: 7).
+* `--dark`, `-d` — Использовать темную тему для фона.
+* `--skip-bg` — Только сгенерировать файл, не устанавливая его как обои.
+* `--skip-cl` — Не удалять промежуточный svg.
+* `--style` — Стратегия генерации палитры: `analogous` (по умолчанию), `mono`, `comp`.
+* `--out`, `-o` — Путь для сохранения файла (по умолчанию генерируется автоматически).
+
+## Сборка
+
+Для компиляции нативного бинарного файла используйте:
+```bash
+sbt nativeImage
+```
+Результат будет сохранен в директории `target/native-image/`.

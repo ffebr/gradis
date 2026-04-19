@@ -25,7 +25,7 @@ object SysIO {
 
       val cmd = Seq("osascript", "-e", script)
       val exitCode = cmd.!
-    }.catchAll(err => ZIO.fail(SetMacWallpaperError(err))).unit
+    }.catchAll(err => ZIO.fail(SetWallpaperError(err))).unit
 
   def deleteFile(path: String): UIO[Unit] =
     ZIO.attemptBlocking {
