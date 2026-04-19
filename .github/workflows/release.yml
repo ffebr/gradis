@@ -32,7 +32,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
-        run: brew install rsvg-convert
+        run: brew install librsvg
 
       - name: Build Native Image
         run: sbt nativeImage
