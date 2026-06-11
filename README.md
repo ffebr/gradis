@@ -21,6 +21,7 @@ CLI-утилита для генерации обоев в разрешении 
 
 ```bash
 xattr -d com.apple.quarantine ./gradis-macos-arm64
+```
 
 ```bash
 gradis generate <hex-color> [options]
