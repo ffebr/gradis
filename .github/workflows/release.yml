@@ -66,6 +66,11 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install sbt -y
 
+      # GraalVM native-image needs the MSVC C compiler (cl.exe) on Windows.
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build native image
         run: sbt nativeImage
 
