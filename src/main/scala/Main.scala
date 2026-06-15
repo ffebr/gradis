@@ -1,11 +1,6 @@
-import engine.PaletteGenerator
 import engine.PaletteStyle
-import engine.SvgGenerator.generateSvgContent
-import zio.Console.*
-import zio.ZIO
 import zio.cli.*
 import zio.cli.HelpDoc.Span.text
-import SysIO.*
 import cli.BuildInfo
 import cli.Cli
 import cli.GenerationConfig

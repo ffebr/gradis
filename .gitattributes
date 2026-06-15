@@ -1,0 +1,5 @@
+# Normalize all text files to LF on checkout (keeps scalafmt happy on Windows CI)
+* text=auto eol=lf
+
+# Binary assets must not be touched
+*.png binary

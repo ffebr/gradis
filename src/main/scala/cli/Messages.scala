@@ -3,7 +3,7 @@ package cli
 object Messages:
 
   object CLI:
-    val summary = "Generates 10K macOS wallpapers based on OKLCH palettes"
+    val summary = "Generates 10K desktop wallpapers based on OKLCH palettes"
     val colorArgHelp = "Base hex color code (e.g., '#9B5DE5' or '#50C878')"
     val stepsOptHelp = "Number of colors in the gradient"
     val darkOptHelp = "Use dark theme for the background"

@@ -6,11 +6,14 @@ on:
       - main
 
 jobs:
-  release:
-    runs-on: macos-latest
+  # 1. Cut a single tag for this release; build jobs reuse it.
+  tag:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-
+    outputs:
+      new_tag: ${{ steps.tag_action.outputs.new_tag }}
+      changelog: ${{ steps.tag_action.outputs.changelog }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,6 +27,30 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: patch
 
+  # 2. Build a native image per OS and attach it to the release.
+  build:
+    needs: tag
+    if: needs.tag.outputs.new_tag != ''
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: gradis-linux-x64
+            binary: target/native-image/gradis
+          - os: macos-latest
+            asset: gradis-macos-arm64
+            binary: target/native-image/gradis
+          - os: windows-latest
+            asset: gradis-windows-x64.exe
+            binary: target/native-image/gradis.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup GraalVM (Java 17)
         uses: graalvm/setup-graalvm@v1
         with:
@@ -31,24 +58,29 @@ jobs:
           distribution: "graalvm"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: brew install sbt librsvg
+      - name: Install sbt (Linux/macOS)
+        if: runner.os != 'Windows'
+        uses: sbt/setup-sbt@v1
 
-      - name: Build Native Image
+      - name: Install sbt (Windows)
+        if: runner.os == 'Windows'
+        run: choco install sbt -y
+
+      - name: Build native image
         run: sbt nativeImage
 
-      - name: Prepare Binary
-        run: |
-          mv target/native-image/gradis target/native-image/gradis-macos-arm64
+      - name: Rename binary
+        shell: bash
+        run: mv "${{ matrix.binary }}" "target/native-image/${{ matrix.asset }}"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag_action.outputs.new_tag }}
-          name: Release ${{ steps.tag_action.outputs.new_tag }}
+          tag_name: ${{ needs.tag.outputs.new_tag }}
+          name: Release ${{ needs.tag.outputs.new_tag }}
           body: |
             ## Что нового
-            ${{ steps.tag_action.outputs.changelog }}
-          files: target/native-image/gradis-macos-arm64
+            ${{ needs.tag.outputs.changelog }}
+          files: target/native-image/${{ matrix.asset }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
