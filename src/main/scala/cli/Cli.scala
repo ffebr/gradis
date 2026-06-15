@@ -4,9 +4,9 @@ import java.util.UUID
 
 import zio.*
 import engine.PaletteGenerator
-import engine.PaletteStyle
 import engine.SvgGenerator.generateSvgContent
 import SysIO.*
+import wallpaper.WallpaperService
 import Messages.Logs
 
 object Cli:
@@ -36,7 +36,7 @@ object Cli:
 
       _ <- ZIO.when(config.setAsWallpaper) {
         Console.printLine(Logs.setWallpaper).orDie *>
-          SysIO.setMacWallpaper(pngPath)
+          WallpaperService.set(pngPath)
       }
 
       _ <- ZIO.when(config.setAsWallpaper) {

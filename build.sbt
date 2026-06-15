@@ -20,6 +20,10 @@ lazy val root = project
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion),
     scalaVersion := scala3Version,
 
+    // scalafix: SemanticDB + unused warnings power the RemoveUnused rule
+    semanticdbEnabled := true,
+    scalacOptions += "-Wunused:all",
+
     Compile / mainClass := Some("Gradis"),
     nativeImageJvm := "graalvm-java17",
     nativeImageVersion := "22.3.1",
